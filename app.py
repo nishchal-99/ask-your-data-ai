@@ -1,100 +1,209 @@
-import streamlit as st
-import sqlite3
-from openai import OpenAI
-
-# ---- Setup ----
-
 import os
-from dotenv import load_dotenv
+import tempfile
 
-load_dotenv()
+import pandas as pd
+import streamlit as st
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+def reset_query():
+    st.session_state.generated_sql = ""
+    st.session_state.risk_report = None
+    st.session_state.user_question = ""
 
-def run_query(query):
-    conn = sqlite3.connect("data.db")
-    cursor = conn.cursor()
-
-    cursor.execute(query)
-    results = cursor.fetchall()
-    columns = [desc[0] for desc in cursor.description]
-
-    conn.close()
-    return columns, results
-
-
-def generate_sql(user_input):
-    prompt = f"""
-    You are a senior data analyst writing SQL for SQLite.
-
-    Table: sales_data
-
-    Columns:
-    order_id, order_date, region, category,
-    sub_category, product_name, sales,
-    quantity, profit
-
-    Rules:
-    - Return ONLY SQL
-    - No markdown
-    - Use correct SQLite syntax
-
-    User question:
-    {user_input}
-    """
-
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    sql = response.choices[0].message.content.strip()
-    sql = sql.replace("```sql", "").replace("```", "").strip()
-
-    return sql
+from db import (
+    create_sqlite_db_from_dataframe,
+    get_schema_description,
+    run_query,
+)
+from sql_engine import analyze_sql_risk, generate_sql
 
 
-# ---- UI ----
 st.set_page_config(page_title="Ask Your Data", layout="wide")
 
-st.title("📊 Ask Your Data")
-
+st.title("Ask Your Data")
 st.caption(
-    "AI-powered analytics assistant that converts natural language questions into SQL and visual insights."
+    "Upload your CSV, ask questions in English, and get SQL-powered answers."
 )
-st.write("Ask questions in plain English and get insights instantly.")
 
-st.markdown("### Try asking:")
-st.write("- Top 5 products by sales")
-st.write("- Sales by region")
-st.write("- Monthly sales trend")
-st.write("- Most profitable category")
+st.markdown("## 1. Upload your CSV")
 
-# Input box
-user_input = st.text_input("Ask a question:")
+uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
 
-if st.button("Run Query") and user_input:
+if "db_path" not in st.session_state:
+    st.session_state.db_path = None
 
-    sql_query = generate_sql(user_input)
+if "table_name" not in st.session_state:
+    st.session_state.table_name = "uploaded_data"
 
-    st.subheader("Generated SQL")
-    st.code(sql_query, language="sql")
+if "schema_description" not in st.session_state:
+    st.session_state.schema_description = ""
 
+if "generated_sql" not in st.session_state:
+    st.session_state.generated_sql = ""
+
+if "risk_report" not in st.session_state:
+    st.session_state.risk_report = None
+
+if "user_question" not in st.session_state:
+    st.session_state.user_question = ""
+
+if uploaded_file is not None:
     try:
-        columns, results = run_query(sql_query)
+        df = pd.read_csv(uploaded_file)
 
-        st.subheader("Results")
+        st.success("CSV uploaded successfully.")
 
-        # Convert to dataframe
-        import pandas as pd
-        df = pd.DataFrame(results, columns=columns)
+        st.markdown("### Data Preview")
+        st.dataframe(df.head(10), use_container_width=True)
 
-        st.dataframe(df)
+        temp_dir = tempfile.gettempdir()
+        db_path = os.path.join(temp_dir, "ask_your_data_uploaded.db")
 
-        # Optional chart
-        if len(df.columns) >= 2:
-            st.subheader("Chart")
-            st.bar_chart(df.set_index(df.columns[0]))
+        table_name = "uploaded_data"
+
+        create_sqlite_db_from_dataframe(
+            df=df,
+            db_path=db_path,
+            table_name=table_name,
+        )
+
+        schema_description = get_schema_description(
+            df=df,
+            table_name=table_name,
+        )
+
+        st.session_state.db_path = db_path
+        st.session_state.table_name = table_name
+        st.session_state.schema_description = schema_description
+
+        st.markdown("### Detected Schema")
+        st.code(schema_description, language="text")
 
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error reading CSV: {e}")
+
+
+if st.session_state.db_path:
+    st.markdown("## 2. Ask a question")
+
+    st.write("Examples:")
+    st.write("- Show top 5 rows")
+    st.write("- Which category has the highest sales?")
+    st.write("- Show total revenue by region")
+    st.write("- Find average profit by product")
+    st.write("- Delete rows where sales is empty")
+    st.write("- Update missing region values to Unknown")
+
+    user_input = st.text_input(
+    "Ask a question about your uploaded CSV:",
+    key="user_question",
+)
+
+    if st.button("Generate SQL") and user_input:
+        try:
+            sql_query = generate_sql(
+                user_input=user_input,
+                schema_description=st.session_state.schema_description,
+                table_name=st.session_state.table_name,
+            )
+
+            risk_report = analyze_sql_risk(sql_query)
+
+            st.session_state.generated_sql = sql_query
+            st.session_state.risk_report = risk_report
+
+        except Exception as e:
+            st.error(f"Error generating SQL: {e}")
+
+
+if st.session_state.generated_sql:
+    st.markdown("## 3. Generated SQL")
+
+    sql_query = st.session_state.generated_sql
+    risk_report = st.session_state.risk_report
+
+    st.code(sql_query, language="sql")
+
+    if risk_report["risk"] == "safe":
+        st.success(risk_report["message"])
+
+        if st.button("Run Query"):
+            try:
+                columns, results = run_query(
+                    query=sql_query,
+                    db_path=st.session_state.db_path,
+                )
+
+                st.markdown("## 4. Results")
+
+                if columns:
+                    result_df = pd.DataFrame(results, columns=columns)
+                    st.dataframe(result_df, use_container_width=True)
+
+                    if len(result_df.columns) >= 2 and not result_df.empty:
+                        st.markdown("### Chart")
+
+                        try:
+                            chart_df = result_df.set_index(result_df.columns[0])
+                            st.bar_chart(chart_df)
+                        except Exception:
+                            st.info("Chart could not be generated for this result.")
+                else:
+                    st.info("Query executed successfully. No rows were returned.")
+
+            except Exception as e:
+                st.error(f"Error running query: {e}")
+
+    else:
+        st.warning(risk_report["message"])
+
+        st.markdown("### Detected Risk Keywords")
+        st.code(", ".join(risk_report["keywords"]), language="text")
+
+        st.error(
+            "This query may modify, create, replace, or delete data. "
+            "Review the SQL carefully before running it."
+        )
+
+        confirm = st.checkbox("I understand the risk and want to run this query.")
+
+        if confirm and st.button("Run Risky Query"):
+            try:
+                columns, results = run_query(
+                    query=sql_query,
+                    db_path=st.session_state.db_path,
+                )
+
+                st.markdown("## 4. Results")
+
+                if columns:
+                    result_df = pd.DataFrame(results, columns=columns)
+                    st.dataframe(result_df, use_container_width=True)
+
+                    if len(result_df.columns) >= 2 and not result_df.empty:
+                        st.markdown("### Chart")
+
+                        try:
+                            chart_df = result_df.set_index(result_df.columns[0])
+                            st.bar_chart(chart_df)
+                        except Exception:
+                            st.info("Chart could not be generated for this result.")
+                else:
+                    st.info("Query executed successfully. No rows were returned.")
+
+            except Exception as e:
+                st.error(f"Error running query: {e}")
+
+else:
+    st.info("Upload a CSV file to begin.")
+
+st.divider()
+
+if st.session_state.db_path:
+
+    st.button(
+
+        "Reset query",
+
+        on_click=reset_query,
+
+    )

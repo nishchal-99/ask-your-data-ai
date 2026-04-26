@@ -1,15 +1,25 @@
 import sqlite3
+
 import pandas as pd
 
-# Connect to database (creates it if not exists)
-conn = sqlite3.connect("data.db")
 
-# Read CSV
-df = pd.read_csv("sales_data.csv")
+CSV_PATH = "sales_data.csv"
+DB_PATH = "data.db"
+TABLE_NAME = "sales_data"
 
-# Load into database
-df.to_sql("sales_data", conn, if_exists="replace", index=False)
 
-conn.close()
+def import_csv_to_sqlite():
+    df = pd.read_csv(CSV_PATH)
 
-print("Data imported successfully into SQLite database!")
+    conn = sqlite3.connect(DB_PATH)
+
+    try:
+        df.to_sql(TABLE_NAME, conn, if_exists="replace", index=False)
+        print(f"Imported {len(df)} rows into table '{TABLE_NAME}'.")
+
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    import_csv_to_sqlite()

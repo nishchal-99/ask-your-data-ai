@@ -1,4 +1,17 @@
 .env
+
 data.db
+*.db
+*.sqlite
+*.sqlite3
+
+sales_data.csv
+uploaded_data.csv
+
 __pycache__/
 *.pyc
+
+.venv/
+venv/
+
+.DS_Store
