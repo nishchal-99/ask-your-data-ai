@@ -78,6 +78,24 @@ After uploading a CSV, users can ask:
 - Delete rows where sales is empty
 - Update missing region values to Unknown
 
+## 📸 Screenshots
+
+### Upload CSV
+
+![Upload CSV screen](screenshots/Upload CSV.png)
+
+### Ask a Question
+
+![Ask a Question screen](screenshots/Ask a Question.png)
+
+### Generated SQL
+
+![Generated SQL screen](screenshots/Results.png)
+
+### Results and Chart
+
+![Results and chart screen](screenshots/Charts.png)
+
 ⚠️ SQL Safety Behavior
 
 The app does not blindly block SQL keywords.
