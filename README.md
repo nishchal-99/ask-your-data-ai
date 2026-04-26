@@ -92,7 +92,7 @@ After uploading a CSV, users can ask:
 
 ![Generated SQL screen](screenshots/Results.png)
 
-### Results and Chart
+### Chart
 
 ![Results and chart screen](screenshots/Charts.png)
 
