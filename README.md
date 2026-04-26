@@ -82,11 +82,11 @@ After uploading a CSV, users can ask:
 
 ### Upload CSV
 
-![Upload CSV screen](screenshots/Upload CSV.png)
+![Upload CSV screen](screenshots/Upload_CSV.png)
 
 ### Ask a Question
 
-![Ask a Question screen](screenshots/Ask a Question.png)
+![Ask a Question screen](screenshots/Ask_A_Question.png)
 
 ### Generated SQL
 
