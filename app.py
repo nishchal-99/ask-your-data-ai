@@ -13,6 +13,12 @@ from safety.query_safety import analyze_sql_risk
 from safety.dry_run import build_delete_dry_run_query
 from ai.query_explainer import explain_sql
 
+from history.query_history import (
+    add_query_to_history,
+    load_history,
+    toggle_favorite,
+    clear_history,
+)
 
 st.set_page_config(page_title="Ask Your Data", layout="wide")
 
@@ -188,6 +194,12 @@ if st.session_state.db_path:
             st.session_state.generated_sql = sql_query
             st.session_state.risk_report = risk_report
 
+            add_query_to_history(
+            question=user_input,
+            sql_query=sql_query,
+            risk_level=risk_report["risk"],
+            )
+
         except Exception as error:
             st.error(f"Error generating SQL: {error}")
 
@@ -206,8 +218,8 @@ if st.session_state.generated_sql:
             user_question=st.session_state.user_question,
         )
 
-    st.markdown("### SQL Explanation")
-    st.write(explanation)
+        st.markdown("### SQL Explanation")
+        st.write(explanation)
 
     if risk_report["risk"] == "safe":
         st.success(risk_report["message"])
@@ -267,6 +279,29 @@ if st.session_state.generated_sql:
 
 else:
     st.info("Upload a CSV file to begin.")
+
+
+st.markdown("## Query History")
+
+history = load_history()
+
+if history:
+    if st.button("Clear History"):
+        clear_history()
+        st.rerun()
+
+    for index, item in enumerate(history):
+        favorite_label = "★ Favorite" if item.get("favorite") else "☆ Mark Favorite"
+
+        with st.expander(f'{item["timestamp"]} — {item["question"]}'):
+            st.write(f'Risk level: {item["risk_level"]}')
+            st.code(item["sql_query"], language="sql")
+
+            if st.button(favorite_label, key=f"favorite_{index}"):
+                toggle_favorite(index)
+                st.rerun()
+else:
+    st.info("No query history yet.")
 
 
 st.divider()
