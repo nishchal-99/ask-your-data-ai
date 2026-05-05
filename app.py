@@ -9,12 +9,12 @@ def reset_query():
     st.session_state.risk_report = None
     st.session_state.user_question = ""
 
-from db import (
-    create_sqlite_db_from_dataframe,
-    get_schema_description,
-    run_query,
-)
-from sql_engine import analyze_sql_risk, generate_sql
+from database.db_loader import create_sqlite_db_from_dataframe
+from database.schema_reader import get_schema_description
+from database.query_executor import run_query
+
+from ai.sql_generator import generate_sql
+from safety.query_safety import analyze_sql_risk
 
 
 st.set_page_config(page_title="Ask Your Data", layout="wide")
