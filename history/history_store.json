@@ -1,15 +1,8 @@
 [
     {
-        "timestamp": "2026-05-05 18:47:33",
+        "timestamp": "2026-05-05 18:56:59",
         "question": "Which category has the highest sales?",
         "sql_query": "SELECT category, SUM(sales) AS total_sales\nFROM uploaded_data\nGROUP BY category\nORDER BY total_sales DESC\nLIMIT 1;",
-        "risk_level": "safe",
-        "favorite": false
-    },
-    {
-        "timestamp": "2026-05-05 18:47:01",
-        "question": "Show top 5 rows",
-        "sql_query": "SELECT * FROM uploaded_data LIMIT 5;",
         "risk_level": "safe",
         "favorite": false
     }

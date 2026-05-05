@@ -1,60 +1,94 @@
 # Ask Your Data AI
 
-Ask Your Data AI is an AI-powered analytics assistant that allows users to upload their own CSV data and query it using natural language.
+Ask Your Data AI is an AI-powered data analytics assistant that allows users to upload their own datasets and query them using natural language.
 
-The app converts English questions into SQLite queries, displays the generated SQL, warns users when a query may modify or delete data, and shows the results in a table and chart when possible.
+Instead of writing SQL manually, users can ask questions in plain English, and the system generates, validates, explains, and executes SQL queries safely — with results visualized instantly.
 
-## 🚀 Features
+## 🚀 Key Features
 
-- Upload your own CSV file
+📊 Core Functionality
+
+- Upload your own CSV files
 - Natural Language → SQL conversion
+- Schema-aware SQL generation (uses actual dataset structure)
 - SQLite database integration
-- AI-generated SQL queries
-- Generated SQL is shown before execution
-- Alert/warning for risky queries such as `DELETE`, `UPDATE`, `INSERT`, `DROP`, `ALTER`, and `CREATE`
-- Confirmation required before running risky queries
+- Automatic result tables and chart visualization
+
+🧠 AI Capabilities
+
+- AI-generated SQL queries using OpenAI
+- AI-powered SQL auto-correction when queries fail
+- Plain-English SQL explanation
+- Context-aware query generation using detected schema
+
+⚠️ Query Safety System
+
+- Risk classification:
+  - ✅ Safe → SELECT queries
+  - ⚠️ Medium → INSERT, UPDATE
+  - 🚨 High → DELETE, DROP, ALTER, TRUNCATE
+- Warning system for risky queries
+- Mandatory confirmation before execution
+- Dry-run preview for DELETE queries (shows affected row count)
+
+🛠️ Product Features
+
+- Query history with timestamps
+- Favorite queries support
+- Download results as CSV
+- Download generated SQL
+- Reset query without re-uploading dataset
 - Interactive Streamlit UI
-- Automatic table output
-- Automatic chart generation for suitable results
-- Reset query option while keeping the uploaded CSV active
 
 ## 🧠 How It Works
 
 User uploads CSV
-
-        ↓
-
-CSV is loaded into SQLite
-
-        ↓
-
-App detects the table schema
-
-        ↓
-
+↓
+Data is loaded into SQLite
+↓
+Schema is automatically extracted
+↓
 User asks a question in English
+↓
+AI generates SQL using schema context
+↓
+Safety analyzer checks query risk
+↓
+Safe queries execute directly
+Risky queries require confirmation + dry-run preview
+↓
+Query executes
+↓
+Results + Charts displayed
+↓
+If error → AI auto-fixes SQL
+↓
+User can view explanation, download results, or save query
 
-        ↓
+## 🏗️ Architecture Overview
 
-AI generates SQL
+User
+↓
+Streamlit UI
+↓
 
-        ↓
+---
 
-App displays the generated SQL
+| Schema Reader |
+| AI SQL Generator |
+| Query Safety Analyzer |
+| Dry Run Engine |
+| Query Executor |
+| Error Auto-Fixer (AI) |
+| SQL Explainer (AI) |
+| History Manager |
 
-        ↓
+---
 
-Risk analyzer checks the SQL
-
-        ↓
-
-Safe queries run normally
-
-Risky queries show a warning and require confirmation
-
-        ↓
-
-Results + Visualization are displayed
+↓
+SQLite Database
+↓
+Results + Charts + Export
 
 ## 🛠️ Tech Stack
 
@@ -98,34 +132,21 @@ After uploading a CSV, users can ask:
 
 ⚠️ SQL Safety Behavior
 
-The app does not blindly block SQL keywords.
+The system does not blindly block queries.
 
-Instead, it detects potentially risky SQL operations and warns the user before execution.
+Instead, it intelligently analyzes risk:
 
-Risky operations include:
+Safe Queries
 
-INSERT
-UPDATE
-DELETE
-DROP
-ALTER
-TRUNCATE
-CREATE
-REPLACE
-VACUUM
-ATTACH
-DETACH
-
-For safe read-only queries like SELECT, the app displays the generated SQL and results normally.
-
-For risky queries, the app displays:
-
-- Generated SQL
-- Warning message
-- Detected risky keywords
-- Confirmation checkbox
-
-The risky query only runs after the user confirms that they understand the risk.
+- Executed immediately
+- Example: SELECT
+  Risky Queries
+- Warning displayed
+- Risk keywords highlighted
+- Confirmation required before execution
+  High-Risk Queries (DELETE, DROP, etc.)
+- Dry-run preview shows affected rows
+- User must explicitly confirm execution
 
 ## ⚡ Setup
 

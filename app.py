@@ -20,6 +20,8 @@ from history.query_history import (
     clear_history,
 )
 
+from export.export_utils import dataframe_to_csv_bytes, sql_to_text_bytes
+
 st.set_page_config(page_title="Ask Your Data", layout="wide")
 
 
@@ -43,7 +45,7 @@ def execute_and_display_query(
             result_df = pd.DataFrame(results, columns=columns)
             st.dataframe(result_df, use_container_width=True)
 
-            csv = result_df.to_csv(index=False).encode("utf-8")
+            csv = dataframe_to_csv_bytes(result_df)
             st.download_button(
                 label="Download results as CSV",
                 data=csv,
@@ -211,6 +213,13 @@ if st.session_state.generated_sql:
     risk_report = st.session_state.risk_report
 
     st.code(sql_query, language="sql")
+
+    st.download_button(
+    label="Download SQL",
+    data=sql_to_text_bytes(sql_query),
+    file_name="generated_query.sql",
+    mime="text/plain",
+    )
 
     if st.button("Explain SQL"):
         explanation = explain_sql(
