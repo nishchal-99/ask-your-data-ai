@@ -11,6 +11,7 @@ from database.schema_reader import get_schema_description
 from database.query_executor import run_query
 from safety.query_safety import analyze_sql_risk
 from safety.dry_run import build_delete_dry_run_query
+from ai.query_explainer import explain_sql
 
 
 st.set_page_config(page_title="Ask Your Data", layout="wide")
@@ -198,6 +199,15 @@ if st.session_state.generated_sql:
     risk_report = st.session_state.risk_report
 
     st.code(sql_query, language="sql")
+
+    if st.button("Explain SQL"):
+        explanation = explain_sql(
+            sql_query=sql_query,
+            user_question=st.session_state.user_question,
+        )
+
+    st.markdown("### SQL Explanation")
+    st.write(explanation)
 
     if risk_report["risk"] == "safe":
         st.success(risk_report["message"])
