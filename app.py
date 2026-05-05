@@ -4,6 +4,72 @@ import tempfile
 import pandas as pd
 import streamlit as st
 
+
+def execute_and_display_query(sql_query, db_path):
+    
+    risk_report = analyze_sql_risk(sql_query)
+
+    st.subheader("Safety Check")
+
+    if risk_report["risk"] == "safe":
+        st.success(risk_report["message"])
+        execute_and_display_query(sql_query, db_path)
+
+    else:
+        if risk_report["risk"] == "medium":
+            st.warning(risk_report["message"])
+
+        if risk_report["risk"] == "high":
+            st.error(risk_report["message"])
+
+        st.write("Detected keywords:", ", ".join(risk_report["keywords"]))
+
+        dry_run_query = build_delete_dry_run_query(sql_query)
+
+        if dry_run_query:
+            st.subheader("Dry Run Preview")
+            st.code(dry_run_query, language="sql")
+
+            try:
+                dry_columns, dry_results = run_query(dry_run_query, db_path)
+
+                if dry_results:
+                    affected_rows = dry_results[0][0]
+                    st.warning(f"This query may affect {affected_rows} rows.")
+
+            except Exception as error:
+                st.warning(f"Could not generate dry-run preview: {error}")
+
+        confirm_run = st.checkbox(
+            "I understand the risk and want to run this query."
+        )
+
+        if confirm_run:
+            execute_and_display_query(sql_query, db_path)
+        else:
+            st.info("Query not executed.")
+
+    if columns and results:
+        import pandas as pd
+
+        result_df = pd.DataFrame(results, columns=columns)
+        st.subheader("Query Results")
+        st.dataframe(result_df)
+
+        csv = result_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Download results as CSV",
+            data=csv,
+            file_name="query_results.csv",
+            mime="text/csv",
+        )
+
+        return result_df
+
+    st.info("Query executed successfully, but no rows were returned.")
+    return None
+
+
 def reset_query():
     st.session_state.generated_sql = ""
     st.session_state.risk_report = None
@@ -15,6 +81,7 @@ from database.query_executor import run_query
 
 from ai.sql_generator import generate_sql
 from safety.query_safety import analyze_sql_risk
+from safety.dry_run import build_delete_dry_run_query
 
 
 st.set_page_config(page_title="Ask Your Data", layout="wide")

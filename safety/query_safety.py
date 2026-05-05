@@ -1,48 +1,60 @@
 import re
 
+
+HIGH_RISK_KEYWORDS = [
+    "DELETE",
+    "DROP",
+    "ALTER",
+    "TRUNCATE",
+]
+
+MEDIUM_RISK_KEYWORDS = [
+    "INSERT",
+    "UPDATE",
+    "CREATE",
+    "REPLACE",
+    "VACUUM",
+    "ATTACH",
+    "DETACH",
+]
+
+
 def analyze_sql_risk(sql: str) -> dict:
-    """
-    Detects whether generated SQL may modify or destroy data.
-
-    This function does not block the query.
-    It only returns a warning report for the UI.
-    """
-    risky_keywords = [
-        "INSERT",
-        "UPDATE",
-        "DELETE",
-        "DROP",
-        "ALTER",
-        "TRUNCATE",
-        "CREATE",
-        "REPLACE",
-        "VACUUM",
-        "ATTACH",
-        "DETACH",
-    ]
-
     detected_keywords = []
 
-    for keyword in risky_keywords:
-        pattern = rf"\b{keyword}\b"
+    # Multiple statements are dangerous
+    statements = [stmt.strip() for stmt in sql.split(";") if stmt.strip()]
+    if len(statements) > 1:
+        return {
+            "risk": "high",
+            "keywords": ["MULTIPLE_STATEMENTS"],
+            "message": "High risk: multiple SQL statements detected.",
+        }
 
-        if re.search(pattern, sql, flags=re.IGNORECASE):
+    for keyword in HIGH_RISK_KEYWORDS:
+        if re.search(rf"\b{keyword}\b", sql, flags=re.IGNORECASE):
             detected_keywords.append(keyword)
-
-    semicolon_count = sql.count(";")
-
-    if semicolon_count > 1:
-        detected_keywords.append("MULTIPLE_STATEMENTS")
 
     if detected_keywords:
         return {
-            "risk": "warning",
+            "risk": "high",
             "keywords": detected_keywords,
-            "message": "Warning: this SQL may modify the database or perform a sensitive operation.",
+            "message": "High risk: this query may delete, remove, or alter database structure.",
+        }
+
+    for keyword in MEDIUM_RISK_KEYWORDS:
+        if re.search(rf"\b{keyword}\b", sql, flags=re.IGNORECASE):
+            detected_keywords.append(keyword)
+
+    if detected_keywords:
+        return {
+            "risk": "medium",
+            "keywords": detected_keywords,
+            "message": "Medium risk: this query may modify the database.",
         }
 
     return {
         "risk": "safe",
         "keywords": [],
-        "message": "This appears to be a read-only query.",
+        "message": "Safe: this appears to be a read-only query.",
     }
