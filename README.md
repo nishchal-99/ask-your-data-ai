@@ -4,7 +4,7 @@ Ask Your Data AI is an AI-powered analytics assistant that allows users to uploa
 
 The app converts English questions into SQLite queries, displays the generated SQL, warns users when a query may modify or delete data, and shows the results in a table and chart when possible.
 
-## 🚀 Features
+## Features
 
 - Upload your own CSV file
 - Natural Language → SQL conversion
@@ -18,7 +18,7 @@ The app converts English questions into SQLite queries, displays the generated S
 - Automatic chart generation for suitable results
 - Reset query option while keeping the uploaded CSV active
 
-## 🧠 How It Works
+## How It Works
 
 User uploads CSV
 
@@ -56,7 +56,7 @@ Risky queries show a warning and require confirmation
 
 Results + Visualization are displayed
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - Python
 - SQLite
@@ -65,7 +65,7 @@ Results + Visualization are displayed
 - Pandas
 - python-dotenv
 
-## 📊 Example Queries
+## Example Queries
 
 After uploading a CSV, users can ask:
 
@@ -78,7 +78,7 @@ After uploading a CSV, users can ask:
 - Delete rows where sales is empty
 - Update missing region values to Unknown
 
-## 📸 Screenshots
+## Screenshots
 
 ### Upload CSV
 
@@ -96,7 +96,7 @@ After uploading a CSV, users can ask:
 
 ![Results and chart screen](screenshots/Charts.png)
 
-⚠️ SQL Safety Behavior
+ SQL Safety Behavior
 
 The app does not blindly block SQL keywords.
 
